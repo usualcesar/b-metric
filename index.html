@@ -169,11 +169,10 @@ e_range:"Revisa los valores: el mínimo no puede ser mayor que el máximo y los 
 r_min:"Normal mínimo",r_max:"Normal máximo",r_cmin:"Crítico si baja de",r_cmax:"Crítico si pasa de",r_sug:"Sugerido",r_undef:"crítico por definir",
 devices:"Dispositivos",dev_note:"Identificadores y batería son de demostración. La batería depende de lo que permita el hardware real.",dev_id:"Identificador",last_tx:"Última transmisión",battery:"Batería (simulada)",connected:"Conectado",no_data:"Sin datos",
 plan:"Plan y suscripción",trial:"Prueba gratis: {n} días",plan_on:"Suscripción activa · {p}",expired:"Tu prueba terminó",paywall:"Para seguir usando B-METRIC elige un plan. Todas las funciones están incluidas.",see_plans:"Ver planes",
-m:"Mensual",s:"Semestral",a:"Anual",price:"[PRECIO]",inc_t:"Todos los planes incluyen",
-i1:"Estanques y criaderos sin límite",i2:"pH, oxígeno, temperatura y salinidad",i3:"Alertas, resumen por hora y alarma sonora",i4:"Gráficas, historial y reportes",i5:"Estanques, dispositivos y bitácora de registros",
-go_pay:"Continuar al pago",pay:"Pago",m_card:"Tarjeta de crédito o débito",m_store:"Pago en tienda (OXXO y más)",m_spei:"Transferencia SPEI",m_wallet:"Cartera del celular",
-card_note:"En la app real, el pago se hace en la pasarela segura del proveedor. Aquí no se captura ningún dato de tarjeta.",
-receipt:"Recibo de pago en tienda",ref:"Referencia",pending:"Pendiente",sim_pay:"Simular pago confirmado",paid:"Pago confirmado. Suscripción activa.",qr_ex:"QR de ejemplo",
+m:"Mensual",s:"Semestral",a:"Anual",price:"Precio por definir",inc_t:"Todos los planes incluyen",
+i1:"Varios estanques en una sola cuenta",i2:"pH, oxígeno, temperatura y salinidad",i3:"Alertas, resumen por hora y alarma sonora",i4:"Gráficas, historial y reportes",i5:"Estanques, dispositivos y bitácora de registros",
+go_pay:"Continuar al pago",pay:"Pago",m_tbd:"Métodos de pago por definir",m_tbd_note:"Esta pantalla es una demostración. Aquí no se captura ningún dato de pago.",
+sim_pay:"Simular pago confirmado",paid:"Pago confirmado. Suscripción activa.",
 out:"Cerrar sesión",
 sim_t:"Simulador de sensores",sim_n:"Provoca fallas para probar alertas y alarma. Los datos son simulados.",sev:"Gravedad",sev_warn:"Aviso",sev_crit:"Crítico",sev_note:"La salinidad solo llega a Aviso: su límite crítico está por definir.",
 sc_normal:"Normalizar",sc_o2:"Oxígeno bajo",sc_ph:"pH bajo",sc_temp:"Temperatura alta",sc_sal:"Salinidad alta",sc_off:"Desconectar",sc_on:"Reconectar",speed:"Velocidad",
@@ -203,7 +202,7 @@ const S = {
   user:null, view:"auth", authMode:"login", authErr:{}, pid:null, sel:"o2", homeMode:"list", per:"24h",
   ponds:[], alerts:[], logs:[], aTab:"active", cat:"c_feed", addOpen:false, csv:"",
   set:{alarm:15, sound:true, hourly:true, need:3}, speed:1, simOpen:false, simPond:null, sev:"crit", lastSum:0,
-  plan:{status:"trial", days:14, period:"a"}, pay:{period:"a", method:"m_store", ref:null},
+  plan:{status:"trial", days:30, period:"a"}, pay:{period:"a"},
   alarmId:null, rangesPond:null, rangesErr:"", flash:""
 };
 
@@ -574,23 +573,11 @@ function vPlans() {
     '<div class="card"><h2 style="font-size:15px">' + t("inc_t") + '</h2>' + ["i1", "i2", "i3", "i4", "i5"].map(i => '<div class="row" style="align-items:flex-start"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>' + t(i) + '</span></div>').join("") + '</div>' +
     '<button class="btn full" type="button" data-a="go" data-v="pay">' + t("go_pay") + '</button></div>';
 }
-function qr(seed) {
-  let s = seed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }, n = 21; let o = "";
-  const fin = (x, y) => { const b = [[0, 0], [14, 0], [0, 14]]; for (const [bx, by] of b) { const a = x - bx, c = y - by; if (a >= 0 && a < 7 && c >= 0 && c < 7) return (a === 0 || a === 6 || c === 0 || c === 6 || (a >= 2 && a <= 4 && c >= 2 && c <= 4)) ? 1 : 0; } return -1; };
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const f = fin(x, y), on = f >= 0 ? f === 1 : r() > .5; if (on) o += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>'; }
-  return '<svg class="qr" width="150" height="150" viewBox="-1 -1 23 23" role="img" aria-label="' + t("qr_ex") + '"><g fill="#0B1F5C">' + o + '</g></svg>';
-}
 function vPay() {
-  const m = S.pay.method;
-  if (!S.pay.ref) S.pay.ref = "BM-" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
-  const ms = ["m_card", "m_store", "m_spei", "m_wallet"];
-  let extra = "";
-  if (m === "m_store") extra = '<div class="card"><div class="row sb"><span class="b">' + t("receipt") + '</span><span class="pill" data-s="warn">' + t("pending") + '</span></div>' + qr(parseInt(S.pay.ref.slice(3), 10)) + '<span class="small muted" style="text-align:center">' + t("qr_ex") + '</span><div class="row sb"><span class="muted">' + t("ref") + '</span><span class="b num">' + S.pay.ref + '</span></div></div>';
-  else if (m === "m_card") extra = '<p class="muted small">' + t("card_note") + '</p>';
+  /* Métodos de pago aún no definidos por el equipo: solo se muestra una nota */
   return '<div class="wrap">' + topbar(t("pay"), true) +
     '<div class="card" style="background:#0B1F5C;color:#fff"><span class="small" style="opacity:.85">' + t(S.pay.period) + ' · B-METRIC</span><span class="xb" style="font-size:22px">' + t("price") + '</span></div>' +
-    '<fieldset style="border:0;padding:0;margin:0" class="list"><legend style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">' + t("pay") + '</legend>' +
-    ms.map(x => '<label class="opt"><input type="radio" name="meth" value="' + x + '" data-c="method"' + (m === x ? " checked" : "") + '><span class="b">' + t(x) + '</span></label>').join("") + '</fieldset>' + extra +
+    '<div class="card"><span class="b">' + t("m_tbd") + '</span><span class="muted small">' + t("m_tbd_note") + '</span></div>' +
     '<button class="btn full" type="button" data-a="simpay">' + t("sim_pay") + '</button></div>';
 }
 
@@ -661,7 +648,7 @@ document.addEventListener("click", e => {
   if (a === "simclose" && e.target.closest(".sheet") && !e.target.closest("button")) return;
   switch (a) {
     case "amode": S.authMode = v; S.authErr = {}; render(); break;
-    case "social": login({name:"Demo", email:"demo@b-metric.app"}); break;
+    case "social": login({name:"Demo", email:"demo@ejemplo.com"}); break;
     case "go": go(v); break;
     case "back": go(S.view === "pond" ? "home" : (S.view === "pay" ? "plans" : "more")); break;
     case "pond": S.pid = +id; S.simPond = +id; go("pond"); break;
@@ -695,7 +682,7 @@ document.addEventListener("click", e => {
     case "scen": { const p = pondById(S.simPond); if (p) { scen(p, v); evalAlerts(); } renderSheet(); render(); break; }
     case "speed": S.speed = +v; restartTimer(); renderSheet(); break;
     case "endtrial": S.plan = {status:"expired", days:0, period:S.plan.period}; S.simOpen = false; renderSheet(); hideAlarm(); render(); break;
-    case "restart": S.plan = {status:"trial", days:14, period:S.plan.period}; S.simOpen = false; renderSheet(); render(); break;
+    case "restart": S.plan = {status:"trial", days:30, period:S.plan.period}; S.simOpen = false; renderSheet(); render(); break;
     case "alarm-stop": { const x = S.alerts.find(z => z.id === S.alarmId); if (x) x.ackAt = Date.now(); hideAlarm(); render(); break; }
     case "alarm-snooze": { const x = S.alerts.find(z => z.id === S.alarmId); if (x) x.snoozeUntil = Date.now() + 30000; hideAlarm(); break; }
   }
@@ -709,7 +696,6 @@ document.addEventListener("change", e => {
   else if (c === "rpond") { S.rangesPond = +el.value; S.rangesErr = ""; S.flash = ""; render(); }
   else if (c === "simpond") { S.simPond = +el.value; renderSheet(); }
   else if (c === "period") S.pay.period = el.value;
-  else if (c === "method") { S.pay.method = el.value; render(); }
 });
 document.addEventListener("submit", e => {
   e.preventDefault(); const f = e.target.id;

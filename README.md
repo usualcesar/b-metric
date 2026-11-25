@@ -23,7 +23,7 @@ La idea es una boya con sensores que flota en el estanque, mide el agua y envía
 - Sección de dispositivos (identificadores y batería de demostración).
 - Rangos editables por estanque.
 - Bitácora de registros (alimentación, siembra, mortalidad, cosecha).
-- Pantallas de suscripción y pago simuladas. El precio aparece como `[PRECIO]` porque aún no está definido.
+- Prueba gratis de 30 días y pantallas de suscripción y pago simuladas. El precio y los métodos de pago aparecen como «por definir» porque aún no están decididos.
 - Un **simulador de sensores** (botón «Simulador») para provocar fallas y probar alertas y alarma.
 
 ## Rangos de referencia (preliminares)
