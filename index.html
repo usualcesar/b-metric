@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>B-METRIC Prototipo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: una columna tipo celular (máx. 440px), barra inferior fija, simulador en hoja inferior.
+   Color: azules del logo BM. Tipo: Inter + Space Grotesk para cifras. */
+:root{
+  --bg:#F2F5FB;--surface:#FFFFFF;--fg:#0B1F5C;--muted:#4A5878;--line:#D6E0F3;
+  --accent:#1F4FD8;--accent-fg:#FFFFFF;--soft:#E3ECFC;
+  --ok:#0E7A4F;--ok-bg:#E1F4EA;--warn:#8A5200;--warn-bg:#FFF0D0;--crit:#B3261E;--crit-bg:#FDE8E6;--off:#4A5878;--off-bg:#E6EAF2;
+  --font:'Inter',system-ui,sans-serif;--num:'Space Grotesk','Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0A1330;--surface:#121C40;--fg:#E8EEFF;--muted:#A5B3D6;--line:#24325E;--accent:#6C9BFF;--accent-fg:#0A1330;--soft:#1B2A5C;
+  --ok:#5CD6A0;--ok-bg:#12332A;--warn:#FFC567;--warn-bg:#3A2C0E;--crit:#FF8A80;--crit-bg:#3E1713;--off:#A5B3D6;--off-bg:#1F2A4D;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1330;--surface:#121C40;--fg:#E8EEFF;--muted:#A5B3D6;--line:#24325E;--accent:#6C9BFF;--accent-fg:#0A1330;--soft:#1B2A5C;
+  --ok:#5CD6A0;--ok-bg:#12332A;--warn:#FFC567;--warn-bg:#3A2C0E;--crit:#FF8A80;--crit-bg:#3E1713;--off:#A5B3D6;--off-bg:#1F2A4D;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.4;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+[data-s=ok]{--c:var(--ok);--cb:var(--ok-bg)}
+[data-s=warn]{--c:var(--warn);--cb:var(--warn-bg)}
+[data-s=crit]{--c:var(--crit);--cb:var(--crit-bg)}
+[data-s=off],[data-s=conn],[data-s=info]{--c:var(--off);--cb:var(--off-bg)}
+.wrap{max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:14px;padding-bottom:100px;padding-top:12px}
+.top{display:flex;align-items:center;gap:10px;min-height:48px}
+.top h1{flex:1;font-size:20px;font-weight:800;min-width:0;overflow-wrap:anywhere}
+.ib{width:44px;height:44px;border-radius:50%;border:0;background:var(--surface);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(11,31,92,.12);flex:none}
+.chip-btn{min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:13px;cursor:pointer;flex:none}
+.card{background:var(--surface);border-radius:16px;padding:14px;box-shadow:0 1px 6px rgba(11,31,92,.10);border:0;width:100%;text-align:left;display:flex;flex-direction:column;gap:10px}
+button.card{cursor:pointer}
+.row{display:flex;align-items:center;gap:10px}.row.sb{justify-content:space-between}.wrapf{flex-wrap:wrap}
+.muted{color:var(--muted)}.small{font-size:12px}.b{font-weight:700}.xb{font-weight:800}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;color:var(--c);background:var(--cb);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.btn{min-height:50px;padding:0 18px;border-radius:14px;border:0;background:var(--accent);color:var(--accent-fg);font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+.btn.ghost{background:transparent;border:1.5px solid var(--accent);color:var(--accent)}
+.btn.sm{min-height:44px;padding:0 14px;font-size:13px;border-radius:10px}
+.btn.full{width:100%}
+.btn:focus-visible,.chip-btn:focus-visible,.ib:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label,.lbl{font-size:13px;font-weight:600}
+input[type=text],input[type=email],input[type=password],select,textarea{width:100%;min-height:48px;border:1.5px solid var(--line);border-radius:12px;padding:0 14px;background:var(--surface);font-size:16px}
+textarea{padding:10px 14px;min-height:90px}
+input[type=checkbox],input[type=radio]{width:22px;height:22px;accent-color:var(--accent);flex:none;margin:0}
+.err{color:var(--crit);font-size:13px;font-weight:600}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:3px;gap:2px}
+.seg button{flex:1;min-height:44px;border:0;border-radius:10px;background:transparent;font-weight:700;font-size:14px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--accent)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.chips button{flex:none;min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:14px;cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.count{background:var(--surface);border-radius:12px;padding:10px 4px;text-align:center;box-shadow:0 1px 4px rgba(11,31,92,.08)}
+.count b{display:block;font-family:var(--num);font-size:22px;color:var(--c)}
+.count span{font-size:11px;font-weight:600;color:var(--muted);line-height:1.2;display:block}
+.vals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.vals div{display:flex;flex-direction:column;min-width:0}
+.vals small{font-size:11px;color:var(--muted);font-weight:500}
+.vals b{font-family:var(--num);font-size:16px;color:var(--c)}
+.pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pc{background:var(--surface);border-radius:14px;padding:12px;border:2px solid transparent;box-shadow:0 1px 4px rgba(11,31,92,.08);text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-width:0}
+.pc[aria-pressed=true]{border-color:var(--accent)}
+.pc .big{font-family:var(--num);font-weight:700;font-size:28px;line-height:1.1;color:var(--c)}
+.pc .big small{font-size:12px;color:var(--muted);font-family:var(--font);font-weight:600}
+.spark{width:100%;height:30px}
+.spark path.l{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart{width:100%;height:auto}
+.chart .band{fill:var(--ok-bg)}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .lim{stroke:var(--ok);stroke-width:1.5;stroke-dasharray:5 4}
+.chart text{fill:var(--muted);font-size:11px;font-family:var(--font)}
+.chart .now{fill:var(--c);stroke:var(--surface);stroke-width:2}
+.banner{border-radius:14px;padding:12px 14px;background:var(--cb);color:var(--fg);border:1.5px solid var(--c);display:flex;gap:10px;align-items:flex-start}
+.banner b{color:var(--c)}
+.mapgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;background:var(--soft);padding:14px;border-radius:16px;position:relative}
+.tile{border-radius:12px;background:var(--cb);border:2px solid var(--c);padding:12px;text-align:center;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font-weight:700}
+.tile .n{width:28px;height:28px;border-radius:50%;background:var(--c);color:var(--surface);display:grid;place-items:center;font-family:var(--num)}
+.tile[data-s=off]{border-style:dashed}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.nav div{max-width:440px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.nav button{position:relative;min-height:52px;border:0;background:transparent;color:var(--muted);font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+.nav button[aria-current=page]{color:var(--accent);font-weight:700}
+.badge{position:absolute;top:2px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:var(--crit);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+#toasts{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;flex-direction:column;gap:8px;align-items:center;padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));pointer-events:none}
+.toast{pointer-events:auto;width:min(100%,420px);text-align:left;border:1.5px solid var(--c);background:var(--surface);border-radius:14px;padding:10px 14px;box-shadow:0 6px 20px rgba(11,31,92,.25);display:flex;flex-direction:column;gap:2px;cursor:pointer}
+.toast strong{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.sheetbg{position:fixed;inset:0;z-index:30;background:rgba(5,12,40,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:min(100%,480px);max-height:88vh;overflow-y:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.sgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.alarm{position:fixed;inset:0;z-index:50;background:#8E1A13;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px))}
+.alarm .big{font-family:var(--num);font-size:64px;font-weight:700;line-height:1}
+.alarm .btn{background:#fff;color:#8E1A13;min-height:60px;width:min(100%,360px);font-size:18px;font-weight:800}
+.alarm .btn.ghost{background:transparent;border:2px solid #fff;color:#fff;font-size:15px;min-height:50px}
+@media (prefers-reduced-motion:no-preference){.alarm{animation:pulse 1s infinite alternate}@keyframes pulse{from{background:#8E1A13}to{background:#B3261E}}}
+.hero{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding-top:8px}
+.hero h1{font-size:30px;font-weight:800;letter-spacing:.02em}
+.lock{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.qr{background:#fff;padding:8px;border-radius:10px;border:1.5px solid var(--line);align-self:center;line-height:0}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{background:var(--surface);border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center;box-shadow:0 1px 4px rgba(11,31,92,.08)}
+.opt{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-radius:14px;border:2px solid var(--line);background:var(--surface);cursor:pointer}
+.opt:has(input:checked){border-color:var(--accent);background:var(--soft)}
+.rrow{display:grid;grid-template-columns:minmax(0,1fr) 78px 78px;gap:8px;align-items:center}
+.rrow input{text-align:center;padding:0 8px;min-height:44px}
+.tabs-note{font-size:12px;color:var(--muted)}
+
+.stale{opacity:.55}
+.demo{align-self:flex-start}
+.rblock{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.rgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rgrid .field label{font-size:12px;color:var(--muted)}
+.rgrid input{text-align:center;min-height:44px}
+.sens{display:flex;flex-wrap:wrap;gap:6px}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="toasts" aria-live="polite"></div>
+<div id="app"></div>
+<nav class="nav" id="nav" hidden aria-label="Principal"></nav>
+<div id="sheet"></div>
+<div id="alarm"></div>
+<script>
+"use strict";
+/* ===== Utilidades ===== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, d) => Number(v).toFixed(d);
+
+/* ===== Textos (español) ===== */
+const T = {
+tag:"Monitorea tus estanques de camarón desde el celular, sin revisar a cada rato.",login:"Iniciar sesión",register:"Crear cuenta",email:"Correo electrónico",pw:"Contraseña",name:"Nombre completo",
+role:"Mi papel (puedes elegir los dos)",owner:"Soy dueño del criadero",worker:"Trabajo en el criadero",or:"o continúa con",google:"Continuar con Google",
+e_email:"Escribe un correo válido.",e_pw:"La contraseña necesita al menos 8 caracteres.",e_name:"Escribe tu nombre.",demo:"Prototipo: no se guarda ninguna cuenta real.",
+home:"Inicio",alerts:"Alertas",logs:"Registros",more:"Más",back:"Volver",close:"Cerrar",sim:"Simulador",
+farm:"Granja de ejemplo",my_ponds:"Mis estanques",list:"Lista",map:"Cuadrícula",add_pond:"Agregar estanque",pond_name:"Nombre del estanque",add:"Agregar",cancel:"Cancelar",
+demo_pill:"Datos simulados · demostración",ponds_n:"estanques",dev_conn_n:"dispositivos conectados",alerts_pend:"alertas pendientes",
+st_ok:"Normal",st_warn:"Aviso",st_crit:"Crítico",st_off:"Sin conexión",
+p_ph:"pH",p_o2:"Oxígeno disuelto",p_temp:"Temperatura",p_sal:"Salinidad",
+range:"Rango",live:"En vivo",updated:"Actualizado",dev_off:"Dispositivo desconectado",last_read:"última lectura",
+rec:"Recomendación",rec_note:"Recomendaciones generales de ejemplo, pendientes de validar con un especialista.",all_ok:"Todo en rango. Sin acciones pendientes.",
+rec_o2:"Revisa el estanque y que la aireación esté funcionando. Consulta a tu técnico.",
+rec_gen:"Revisa el estanque. Consulta a tu técnico antes de tomar acción.",
+trend:"Tendencia",min:"Mín",max:"Máx",avg:"Promedio",lo:"Mínimo",hi:"Máximo",now:"Ahora",readings:"lecturas atrás",
+sim_note_chart:"Datos simulados. En «En vivo» cada punto es una lectura; en los demás periodos hay una lectura cada 30 minutos.",
+p_live:"En vivo",p_24h:"24 horas",p_7d:"7 días",p_30d:"30 días",period:"Periodo",
+copy_csv:"Copiar reporte (CSV)",copied:"Reporte copiado",copy_fail:"No se pudo copiar. Selecciona el texto de abajo.",
+active:"Activas",history:"Historial",ack:"Enterado",acked:"Atendida",resolved:"Resuelta",view:"Ver",no_active:"Sin alertas activas.",no_hist:"Aún no hay historial.",
+a_low:"bajo",a_high:"alto",a_conn:"Dispositivo desconectado",a_conn_d:"Dejó de enviar datos. Revisa la energía o la señal del dispositivo.",a_sum:"Resumen de la hora",
+lv_warn:"Aviso",lv_crit:"Crítica",lv_conn:"Conexión",lv_info:"Resumen",notif:"Notificación",
+how:"Cómo te avisamos",alarm_after:"Alarma si nadie atiende (segundos, demo)",alarm_off:"Apagada",sound:"Sonido de alarma",hourly:"Resumen cada hora",sim_hour:"Simular resumen de la hora",
+need:"Lecturas seguidas fuera de rango para alertar",need_note:"Evita falsas alarmas por una lectura aislada. Con 1 alerta de inmediato.",push_note:"Las notificaciones push se simulan en pantalla en esta demostración.",
+alarm_t:"ALARMA B-METRIC",stop:"Enterado, detener alarma",snooze:"Posponer 30 s",
+c_feed:"Alimentación",c_seed:"Siembra",c_mort:"Mortalidad",c_harv:"Cosecha",qty:"Cantidad",det:"Detalle (opcional)",save:"Guardar",no_logs:"Sin registros todavía.",pond:"Estanque",saved:"Guardado",e_qty:"Escribe una cantidad mayor que cero.",
+ranges:"Rangos ideales",ranges_i:"Tú decides los rangos de cada estanque. Los sugeridos son valores preliminares: valídalos con un especialista.",use_sug:"Usar sugeridos",save_r:"Guardar rangos",copy_all:"Copiar a todos",
+e_range:"Revisa los valores: el mínimo no puede ser mayor que el máximo y los límites críticos deben quedar fuera del rango normal.",
+r_min:"Normal mínimo",r_max:"Normal máximo",r_cmin:"Crítico si baja de",r_cmax:"Crítico si pasa de",r_sug:"Sugerido",r_undef:"crítico por definir",
+devices:"Dispositivos",dev_note:"Identificadores y batería son de demostración. La batería depende de lo que permita el hardware real.",dev_id:"Identificador",last_tx:"Última transmisión",battery:"Batería (simulada)",connected:"Conectado",no_data:"Sin datos",
+plan:"Plan y suscripción",trial:"Prueba gratis: {n} días",plan_on:"Suscripción activa · {p}",expired:"Tu prueba terminó",paywall:"Para seguir usando B-METRIC elige un plan. Todas las funciones están incluidas.",see_plans:"Ver planes",
+m:"Mensual",s:"Semestral",a:"Anual",price:"[PRECIO]",inc_t:"Todos los planes incluyen",
+i1:"Estanques y criaderos sin límite",i2:"pH, oxígeno, temperatura y salinidad",i3:"Alertas, resumen por hora y alarma sonora",i4:"Gráficas, historial y reportes",i5:"Estanques, dispositivos y bitácora de registros",
+go_pay:"Continuar al pago",pay:"Pago",m_card:"Tarjeta de crédito o débito",m_store:"Pago en tienda (OXXO y más)",m_spei:"Transferencia SPEI",m_wallet:"Cartera del celular",
+card_note:"En la app real, el pago se hace en la pasarela segura del proveedor. Aquí no se captura ningún dato de tarjeta.",
+receipt:"Recibo de pago en tienda",ref:"Referencia",pending:"Pendiente",sim_pay:"Simular pago confirmado",paid:"Pago confirmado. Suscripción activa.",qr_ex:"QR de ejemplo",
+out:"Cerrar sesión",
+sim_t:"Simulador de sensores",sim_n:"Provoca fallas para probar alertas y alarma. Los datos son simulados.",sev:"Gravedad",sev_warn:"Aviso",sev_crit:"Crítico",sev_note:"La salinidad solo llega a Aviso: su límite crítico está por definir.",
+sc_normal:"Normalizar",sc_o2:"Oxígeno bajo",sc_ph:"pH bajo",sc_temp:"Temperatura alta",sc_sal:"Salinidad alta",sc_off:"Desconectar",sc_on:"Reconectar",speed:"Velocidad",
+end_trial:"Terminar prueba gratis",restart_trial:"Reiniciar prueba",now_read:"Lecturas actuales",
+sc_hint:"Prueba esto: elige un estanque, pulsa «Oxígeno bajo» y espera la alerta, la notificación y la alarma."
+};
+const t = (k, o) => { let s = T[k] || k; if (o) for (const x in o) s = s.replace("{" + x + "}", o[x]); return s; };
+
+/* ===== Parámetros =====
+   Rangos preliminares: Normal dentro de [min, max]; Aviso fuera de ese rango; Crítico más allá de cmin/cmax.
+   Oxígeno, temperatura y pH salen del documento del proyecto; los límites de pH 7.0 y 9.0 son una propuesta de demostración.
+   Salinidad: el límite crítico (cambio brusco) está por definir, por eso es null. */
+const PK = ["ph", "o2", "temp", "sal"];
+const PD = {
+  ph:{u:"",d:2,base:8.1,noise:.025,min:7.5,max:8.5,cmin:7.0,cmax:9.0,amp:.15,ph0:10},
+  o2:{u:"mg/L",d:1,base:5.8,noise:.1,min:5,max:null,cmin:4,cmax:null,amp:.7,ph0:11},
+  temp:{u:"°C",d:1,base:29.2,noise:.12,min:26,max:32,cmin:24,cmax:33,amp:1.1,ph0:9},
+  sal:{u:"ppt",d:1,base:20,noise:.12,min:15,max:25,cmin:null,cmax:null,amp:.2,ph0:0}
+};
+/* Valores objetivo del simulador por gravedad */
+const SC = {o2:{warn:4.5,crit:2.6}, ph:{warn:7.2,crit:6.9}, temp:{warn:32.6,crit:33.8}, sal:{warn:28,crit:28}};
+const PER = {"24h":24 * 3600e3, "7d":7 * 24 * 3600e3, "30d":30 * 24 * 3600e3};
+
+/* ===== Estado ===== */
+let uid = 0, aid = 0, lid = 0, did = 0;
+const S = {
+  user:null, view:"auth", authMode:"login", authErr:{}, pid:null, sel:"o2", homeMode:"list", per:"24h",
+  ponds:[], alerts:[], logs:[], aTab:"active", cat:"c_feed", addOpen:false, csv:"",
+  set:{alarm:15, sound:true, hourly:true, need:3}, speed:1, simOpen:false, simPond:null, sev:"crit", lastSum:0,
+  plan:{status:"trial", days:14, period:"a"}, pay:{period:"a", method:"m_store", ref:null},
+  alarmId:null, rangesPond:null, rangesErr:"", flash:""
+};
+
+function makePond(name, base) {
+  const p = {id:++uid, name, online:true, off:0, ts:Date.now(), vals:{}, tg:{}, hist:{}, ser:{}, ranges:{}, cnt:{},
+    dev:{id:"B-" + String(++did).padStart(3, "0"), batt:70 + Math.floor(Math.random() * 25)}};
+  const now = Date.now(), N = 1440, step = 1800e3;
+  PK.forEach(k => {
+    const d = PD[k], b = (base && base[k] != null) ? base[k] : d.base;
+    p.ranges[k] = {min:d.min, max:d.max, cmin:d.cmin, cmax:d.cmax}; p.cnt[k] = 0;
+    let v = b; p.hist[k] = [];
+    for (let i = 0; i < 60; i++) { v += (b - v) * .1 + (Math.random() - .5) * d.noise * 2; p.hist[k].push(v); }
+    p.vals[k] = v; p.tg[k] = b;
+    /* Historial simulado de 30 días, una lectura cada 30 minutos, con ciclo diario */
+    p.ser[k] = []; let w = 0;
+    for (let i = 0; i < N; i++) {
+      const ts = now - (N - 1 - i) * step, dt = new Date(ts), h = dt.getHours() + dt.getMinutes() / 60;
+      w = w * .9 + (Math.random() - .5) * d.noise * 6;
+      p.ser[k].push([ts, b + d.amp * Math.sin(2 * Math.PI * (h - d.ph0) / 24) + w]);
+    }
+  });
+  return p;
+}
+function seed() {
+  /* Valores de ejemplo del documento del proyecto (solo para la interfaz) */
+  S.ponds = [
+    makePond("Estanque 1", {o2:5.8, temp:29.2, ph:8.1, sal:20}),
+    makePond("Estanque 2", {o2:3.6, temp:30.1, ph:8.3, sal:22}),
+    makePond("Estanque 3", {o2:6.2, temp:27.8, ph:7.9, sal:18})
+  ];
+  S.simPond = S.ponds[0].id; S.rangesPond = S.ponds[0].id;
+  S.logs = [
+    {id:++lid, pid:S.ponds[0].id, cat:"c_feed", qty:12, det:"Balanceado", ts:Date.now() - 6 * 3600e3},
+    {id:++lid, pid:S.ponds[0].id, cat:"c_feed", qty:11.5, det:"Balanceado", ts:Date.now() - 20 * 3600e3}
+  ];
+}
+const pondById = id => S.ponds.find(p => p.id === +id);
+
+/* ===== Estado de parámetros ===== */
+function pst(p, k) {
+  const v = p.vals[k], r = p.ranges[k];
+  if ((r.cmin != null && v < r.cmin) || (r.cmax != null && v > r.cmax)) return "crit";
+  if ((r.min != null && v < r.min) || (r.max != null && v > r.max)) return "warn";
+  return "ok";
+}
+const pdir = (p, k) => (p.ranges[k].min != null && p.vals[k] < p.ranges[k].min) ? "low" : "high";
+function pondSt(p) {
+  if (!p.online) return "off";
+  let w = "ok";
+  PK.forEach(k => { const s = pst(p, k); if (s === "crit") w = "crit"; else if (s === "warn" && w !== "crit") w = "warn"; });
+  return w;
+}
+const rangeTxt = r => (r.min != null && r.max != null) ? r.min + " – " + r.max : r.min != null ? "≥ " + r.min : r.max != null ? "≤ " + r.max : "—";
+
+/* ===== Simulación (se sustituirá por datos de una API cuando exista) ===== */
+function tick() {
+  S.ponds.forEach(p => {
+    if (!p.online) { p.off++; PK.forEach(k => p.cnt[k] = 0); return; }
+    p.off = 0; p.ts = Date.now();
+    PK.forEach(k => {
+      const d = PD[k];
+      p.vals[k] += (p.tg[k] - p.vals[k]) * .15 + (Math.random() - .5) * d.noise * 2;
+      p.hist[k].push(p.vals[k]); if (p.hist[k].length > 240) p.hist[k].shift();
+      p.cnt[k] = pst(p, k) === "ok" ? 0 : p.cnt[k] + 1;
+    });
+  });
+  if (S.user) { evalAlerts(); hourlyCheck(); }
+  afterTick();
+}
+function scen(p, s) {
+  if (s === "off") { p.online = false; p.off = 0; return; }
+  p.online = true; p.off = 0;
+  if (s === "on") return;
+  if (s === "normal") { PK.forEach(k => p.tg[k] = PD[k].base); return; }
+  p.tg[s] = SC[s][S.sev];
+}
+
+/* ===== Alertas ===== */
+function newAlert(p, k, level) {
+  const a = {id:++aid, pid:p.id, k, level, dir:k === "conn" ? "" : pdir(p, k), v:k === "conn" ? 0 : p.vals[k], ts:Date.now(), ackAt:null, snoozeUntil:0, resolved:false};
+  S.alerts.unshift(a); notify(a);
+}
+function evalAlerts() {
+  const now = Date.now();
+  S.ponds.forEach(p => {
+    PK.forEach(k => {
+      if (!p.online) return;
+      const lvl = pst(p, k), a = S.alerts.find(x => x.pid === p.id && x.k === k && !x.resolved);
+      if (lvl === "ok") { if (a) { a.resolved = true; a.resolvedAt = now; } return; }
+      if (!a) { if (p.cnt[k] >= S.set.need) newAlert(p, k, lvl); return; }
+      a.v = p.vals[k]; a.dir = pdir(p, k);
+      if (a.level !== lvl) { const worse = lvl === "crit"; a.level = lvl; if (worse) { a.ts = now; a.ackAt = null; a.snoozeUntil = 0; notify(a); } }
+    });
+    const c = S.alerts.find(x => x.pid === p.id && x.k === "conn" && !x.resolved);
+    if (!p.online && p.off >= 4 && !c) newAlert(p, "conn", "conn");
+    if (p.online && c) { c.resolved = true; c.resolvedAt = now; }
+  });
+}
+function addSummary() {
+  const txt = S.ponds.map(p => p.name + ": " + PK.map(k => t("p_" + k) + " " + fmt(p.vals[k], PD[k].d === 2 ? 1 : PD[k].d)).join(", ")).join(" | ");
+  S.alerts.unshift({id:++aid, pid:0, k:"sum", level:"info", ts:Date.now(), resolved:false, ackAt:null, text:txt, snoozeUntil:0});
+  toast(t("a_sum"), "info", true);
+}
+function hourlyCheck() {
+  if (!S.set.hourly || !S.lastSum) return;
+  if (Date.now() - S.lastSum >= 3600e3 / S.speed) { S.lastSum = Date.now(); addSummary(); }
+}
+function alertTitle(a) {
+  const p = pondById(a.pid), n = p ? p.name : "";
+  if (a.k === "conn") return n + " · " + t("a_conn");
+  if (a.k === "sum") return t("a_sum");
+  return n + " · " + t("p_" + a.k) + " " + t(a.dir === "low" ? "a_low" : "a_high");
+}
+function alertDetail(a) {
+  if (a.k === "conn") return t("a_conn_d");
+  if (a.k === "sum") return a.text;
+  const p = pondById(a.pid); if (!p) return "";
+  return fmt(a.v, PD[a.k].d) + " " + PD[a.k].u + " · " + t("range") + ": " + rangeTxt(p.ranges[a.k]);
+}
+function notify(a) {
+  toast(alertTitle(a), a.level, true);
+  if (a.level === "crit") beep();
+}
+function toast(text, lvl, go) {
+  const box = $("#toasts"), d = document.createElement("button");
+  d.type = "button"; d.className = "toast"; d.dataset.s = lvl || "ok";
+  d.innerHTML = "<strong>" + t("notif") + " · B-METRIC</strong><span>" + esc(text) + "</span>";
+  d.addEventListener("click", () => { d.remove(); if (go && S.user) { S.view = "alerts"; S.aTab = "active"; render(); } });
+  box.appendChild(d);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => d.remove(), 6500);
+}
+let ac = null;
+function beep() {
+  if (!S.set.sound) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === "suspended") ac.resume();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = "square"; o.frequency.value = 880; g.gain.value = .05;
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + .25);
+  } catch (e) {}
+}
+let alarmTimer = null;
+function alarmCheck() {
+  if (!S.user || S.plan.status === "expired" || !S.set.alarm) { if (S.alarmId) hideAlarm(); return; }
+  const now = Date.now();
+  const a = S.alerts.find(x => !x.resolved && x.level === "crit" && !x.ackAt && now - x.ts >= S.set.alarm * 1000 && now > x.snoozeUntil);
+  if (a) { if (S.alarmId !== a.id) { S.alarmId = a.id; showAlarm(a); } }
+  else if (S.alarmId) hideAlarm();
+}
+function showAlarm(a) {
+  const p = pondById(a.pid);
+  $("#alarm").innerHTML = '<div class="alarm" role="alertdialog" aria-label="' + esc(t("alarm_t")) + '"><div class="b" style="letter-spacing:.12em">' + t("alarm_t") + '</div>' +
+    '<div class="big">' + fmt(a.v, PD[a.k].d) + '</div><div class="b">' + PD[a.k].u + '</div>' +
+    '<h2 style="font-size:24px">' + esc(p ? p.name : "") + '</h2><div style="font-size:18px;font-weight:700">' + esc(t("p_" + a.k) + " " + t(a.dir === "low" ? "a_low" : "a_high")) + '</div>' +
+    '<div style="height:12px"></div><button class="btn" data-a="alarm-stop" type="button">' + t("stop") + '</button><button class="btn ghost" data-a="alarm-snooze" type="button">' + t("snooze") + '</button></div>';
+  beep(); clearInterval(alarmTimer); alarmTimer = setInterval(beep, 1000);
+}
+function hideAlarm() { S.alarmId = null; $("#alarm").innerHTML = ""; clearInterval(alarmTimer); }
+
+/* ===== Gráficas ===== */
+function spark(arr) {
+  const a = arr.slice(-40), W = 100, H = 30;
+  let lo = Math.min(...a), hi = Math.max(...a); if (hi - lo < 1e-6) { hi += .5; lo -= .5; }
+  const pts = a.map((v, i) => (i / (a.length - 1) * W).toFixed(1) + "," + (H - 3 - (v - lo) / (hi - lo) * (H - 6)).toFixed(1));
+  return '<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path class="l" d="M' + pts.join(" L") + '"/></svg>';
+}
+/* Serie [fecha, valor] del periodo elegido. "En vivo" no tiene fecha por punto. */
+function seriesFor(p, k) {
+  if (S.per === "live") return p.hist[k].slice(-60).map(v => [null, v]);
+  const from = Date.now() - PER[S.per];
+  return p.ser[k].filter(x => x[0] >= from).concat([[Date.now(), p.vals[k]]]);
+}
+function thin(a, max) { if (a.length <= max) return a; const st = Math.ceil(a.length / max), o = []; for (let i = 0; i < a.length; i += st) o.push(a[i]); if (o[o.length - 1] !== a[a.length - 1]) o.push(a[a.length - 1]); return o; }
+function axisLbl(ts) {
+  const d = new Date(ts);
+  return S.per === "24h" ? d.toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : d.toLocaleDateString("es-MX", {day:"2-digit", month:"short"});
+}
+function bigChart(p, k, full) {
+  const a = thin(full, 120), d = PD[k], r = p.ranges[k], W = 340, H = 170, L = 38, R = 8, Tp = 10, B = 24;
+  const vals = a.map(x => x[1]);
+  let lo = Math.min(...vals, r.min != null ? r.min : Infinity), hi = Math.max(...vals, r.max != null ? r.max : -Infinity);
+  const pad = (hi - lo) * .15 || 1; lo -= pad; hi += pad;
+  const X = i => L + i / (a.length - 1) * (W - L - R), Y = v => Tp + (hi - v) / (hi - lo) * (H - Tp - B);
+  const bandTop = r.max != null ? Y(r.max) : Tp, bandBot = r.min != null ? Y(r.min) : H - B;
+  let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(t("p_" + k) + " · " + t("trend")) + '">';
+  s += '<rect class="band" x="' + L + '" y="' + bandTop.toFixed(1) + '" width="' + (W - L - R) + '" height="' + Math.max(0, bandBot - bandTop).toFixed(1) + '"/>';
+  [0, 1, 2].forEach(i => { const v = lo + (hi - lo) * (i / 2), y = Y(v); s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '"/><text x="' + (L - 5) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end">' + fmt(v, d.d === 2 ? 1 : d.d) + '</text>'; });
+  if (r.min != null) s += '<line class="lim" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(r.min).toFixed(1) + '" y2="' + Y(r.min).toFixed(1) + '"/>';
+  if (r.max != null) s += '<line class="lim" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(r.max).toFixed(1) + '" y2="' + Y(r.max).toFixed(1) + '"/>';
+  s += '<path class="ln" d="M' + a.map((x, i) => X(i).toFixed(1) + "," + Y(x[1]).toFixed(1)).join(" L") + '"/>';
+  s += '<circle class="now" cx="' + X(a.length - 1).toFixed(1) + '" cy="' + Y(a[a.length - 1][1]).toFixed(1) + '" r="5.5"/>';
+  if (S.per === "live") s += '<text x="' + L + '" y="' + (H - 6) + '">−' + (a.length - 1) + ' ' + t("readings") + '</text>';
+  else {
+    s += '<text x="' + L + '" y="' + (H - 6) + '">' + axisLbl(a[0][0]) + '</text>';
+    s += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 6) + '" text-anchor="middle">' + axisLbl(a[Math.floor(a.length / 2)][0]) + '</text>';
+  }
+  s += '<text x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end">' + t("now") + '</text></svg>';
+  return s;
+}
+
+/* ===== Piezas de UI ===== */
+const I = {
+  back:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+  home:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+  bell:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10.3 20a2 2 0 003.4 0"/></svg>',
+  doc:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7"/></svg>',
+  menu:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'
+};
+const LOGO = n => '<svg width="' + n + '" height="' + n + '" viewBox="0 0 64 64" role="img" aria-label="B-METRIC"><path d="M15 5 L34 40 L8 52 Z" fill="#0B2A8F"/><path d="M32 13 L50 42 L22 42 Z" fill="#2A4FC4"/><path d="M52 19 L58 50 L30 61 L10 50 L32 34 Z" fill="#4A86DC"/><text x="32" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-weight="800" font-size="17" fill="#001A5C">BM</text></svg>';
+const pill = s => '<span class="pill" data-s="' + s + '">' + t("st_" + s) + "</span>";
+const demoPill = () => '<span class="pill demo" data-s="info">' + t("demo_pill") + '</span>';
+const timeS = ts => new Date(ts).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+const timeM = ts => new Date(ts).toLocaleString("es-MX", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"});
+function topbar(title, back) {
+  return '<header class="top">' + (back ? '<button class="ib" type="button" data-a="back" aria-label="' + t("back") + '">' + I.back + '</button>' : '<span style="flex:none;line-height:0">' + LOGO(34) + '</span>') +
+    '<h1>' + esc(title) + '</h1><button class="chip-btn" type="button" data-a="sim">' + t("sim") + '</button></header>';
+}
+function lockedView() {
+  return '<div class="wrap">' + topbar("B-METRIC") + '<div class="card lock"><span class="pill" data-s="crit">' + t("expired") + '</span><h2>' + t("paywall") + '</h2><button class="btn full" type="button" data-a="go" data-v="plans">' + t("see_plans") + '</button></div></div>';
+}
+const activeCount = () => S.alerts.filter(a => !a.resolved && a.level !== "info" && !a.ackAt).length;
+
+/* ===== Vistas ===== */
+function vAuth() {
+  const reg = S.authMode === "register", e = S.authErr;
+  return '<div class="wrap" style="gap:16px">' +
+    '<div class="hero">' + LOGO(84) + '<h1>B-METRIC</h1><p class="muted">' + t("tag") + '</p></div>' +
+    '<div class="seg"><button type="button" data-a="amode" data-v="login" aria-pressed="' + !reg + '">' + t("login") + '</button><button type="button" data-a="amode" data-v="register" aria-pressed="' + reg + '">' + t("register") + '</button></div>' +
+    '<form id="authform" class="list" style="gap:12px" novalidate>' +
+    (reg ? '<div class="field"><label for="a-name">' + t("name") + '</label><input id="a-name" type="text" autocomplete="name">' + (e.name ? '<span class="err">' + t("e_name") + '</span>' : '') + '</div>' : '') +
+    '<div class="field"><label for="a-email">' + t("email") + '</label><input id="a-email" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com">' + (e.email ? '<span class="err">' + t("e_email") + '</span>' : '') + '</div>' +
+    '<div class="field"><label for="a-pw">' + t("pw") + '</label><input id="a-pw" type="password" autocomplete="' + (reg ? "new-password" : "current-password") + '">' + (e.pw ? '<span class="err">' + t("e_pw") + '</span>' : '') + '</div>' +
+    (reg ? '<fieldset style="border:0;padding:0;margin:0" class="list"><legend class="lbl" style="padding:0;margin-bottom:6px">' + t("role") + '</legend><label class="opt"><input type="checkbox" checked>' + t("owner") + '</label><label class="opt"><input type="checkbox" checked>' + t("worker") + '</label></fieldset>' : '') +
+    '<button class="btn full" type="submit">' + (reg ? t("register") : t("login")) + '</button></form>' +
+    '<div class="row muted small" style="justify-content:center">' + t("or") + '</div>' +
+    '<button class="btn ghost full" type="button" data-a="social">' + t("google") + '</button>' +
+    '<p class="muted small" style="text-align:center">' + t("demo") + '</p></div>';
+}
+function pondCard(p) {
+  const s = pondSt(p);
+  return '<button class="card" type="button" data-a="pond" data-id="' + p.id + '" data-s="' + s + '"><div class="row sb"><span class="b" style="font-size:16px">' + esc(p.name) + '</span>' + pill(s) + '</div>' +
+    '<div class="vals' + (p.online ? '' : ' stale') + '">' + PK.map(k => '<div data-s="' + (p.online ? pst(p, k) : "off") + '"><small>' + t("p_" + k) + '</small><b>' + fmt(p.vals[k], PD[k].d === 2 ? 1 : PD[k].d) + '</b></div>').join("") + '</div>' +
+    '<span class="muted small">' + (p.online ? t("updated") + " " + timeS(p.ts) : t("dev_off") + " · " + t("last_read") + " " + timeS(p.ts)) + '</span></button>';
+}
+function vHome() {
+  const c = {ok:0, warn:0, crit:0, off:0}; S.ponds.forEach(p => c[pondSt(p)]++);
+  const nOn = S.ponds.filter(p => p.online).length, last = Math.max(...S.ponds.map(p => p.ts));
+  let planB = "";
+  if (S.plan.status === "trial") planB = '<button class="card" type="button" data-a="go" data-v="plans" style="flex-direction:row;align-items:center;justify-content:space-between"><span class="b">' + t("trial", {n:S.plan.days}) + '</span><span class="pill" data-s="warn">' + t("see_plans") + '</span></button>';
+  const body = S.homeMode === "list" ? S.ponds.map(pondCard).join("") :
+    '<div class="mapgrid">' + S.ponds.map((p, i) => { const s = pondSt(p); return '<button class="tile" type="button" data-a="pond" data-id="' + p.id + '" data-s="' + s + '"><span class="n">' + (i + 1) + '</span><span>' + esc(p.name) + '</span><span class="small" style="color:var(--c)">' + t("st_" + s) + '</span></button>'; }).join("") + '</div>';
+  const add = S.addOpen ?
+    '<form id="addform" class="card"><div class="field"><label for="np">' + t("pond_name") + '</label><input id="np" type="text" value="Estanque ' + (S.ponds.length + 1) + '"></div><div class="row"><button class="btn sm" type="submit">' + t("add") + '</button><button class="btn sm ghost" type="button" data-a="addclose">' + t("cancel") + '</button></div></form>' :
+    '<button class="btn ghost full" type="button" data-a="addopen">+ ' + t("add_pond") + '</button>';
+  return '<div class="wrap">' + topbar(t("farm")) + demoPill() + planB +
+    '<div class="card"><div class="row sb wrapf"><span class="b">' + S.ponds.length + ' ' + t("ponds_n") + '</span><span>' + nOn + ' ' + t("dev_conn_n") + '</span><span>' + activeCount() + ' ' + t("alerts_pend") + '</span></div><span class="muted small">' + t("updated") + ' ' + timeS(last) + '</span></div>' +
+    '<div class="counts"><div class="count" data-s="ok"><b>' + c.ok + '</b><span>' + t("st_ok") + '</span></div><div class="count" data-s="warn"><b>' + c.warn + '</b><span>' + t("st_warn") + '</span></div><div class="count" data-s="crit"><b>' + c.crit + '</b><span>' + t("st_crit") + '</span></div><div class="count" data-s="off"><b>' + c.off + '</b><span>' + t("st_off") + '</span></div></div>' +
+    '<div class="row sb"><h2 style="font-size:18px">' + t("my_ponds") + '</h2><div class="seg" style="min-width:190px"><button type="button" data-a="hmode" data-v="list" aria-pressed="' + (S.homeMode === "list") + '">' + t("list") + '</button><button type="button" data-a="hmode" data-v="map" aria-pressed="' + (S.homeMode === "map") + '">' + t("map") + '</button></div></div>' +
+    body + add + '<p class="muted small">' + t("sc_hint") + '</p></div>';
+}
+function vPond() {
+  const p = pondById(S.pid); if (!p) { S.view = "home"; return vHome(); }
+  const s = pondSt(p), k = S.sel, d = PD[k];
+  const lvRank = {crit:2, warn:1};
+  const worst = S.alerts.filter(a => a.pid === p.id && !a.resolved && (a.level === "crit" || a.level === "warn")).sort((x, y) => lvRank[y.level] - lvRank[x.level])[0] || null;
+  const conn = S.alerts.find(a => a.pid === p.id && a.k === "conn" && !a.resolved);
+  const ban = conn ? '<div class="banner" data-s="conn"><div><b>' + esc(alertTitle(conn)) + '</b><div class="small">' + t("a_conn_d") + ' ' + t("last_read") + ': ' + timeS(p.ts) + '.</div></div></div>' :
+    worst ? '<div class="banner" data-s="' + worst.level + '"><div><b>' + esc(alertTitle(worst)) + '</b><div class="small">' + esc(alertDetail(worst)) + '</div></div></div>' : "";
+  const cards = PK.map(q => {
+    const st = p.online ? pst(p, q) : "off";
+    return '<button class="pc" type="button" data-a="sel" data-k="' + q + '" data-s="' + st + '" aria-pressed="' + (q === k) + '"><div class="row sb"><span class="small b muted">' + t("p_" + q) + '</span>' + pill(st) + '</div>' +
+      '<div class="big' + (p.online ? '' : ' stale') + '">' + fmt(p.vals[q], PD[q].d) + ' <small>' + PD[q].u + '</small></div><span class="small muted">' + (p.online ? t("range") + ': ' + rangeTxt(p.ranges[q]) : t("last_read") + ': ' + timeS(p.ts)) + '</span>' + spark(p.hist[q]) + '</button>';
+  }).join("");
+  const full = seriesFor(p, k), vs = full.map(x => x[1]);
+  const mn = Math.min(...vs), mx = Math.max(...vs), av = vs.reduce((x, y) => x + y, 0) / vs.length;
+  const recSet = new Set();
+  PK.forEach(q => { if (p.online && pst(p, q) !== "ok") recSet.add(q === "o2" ? t("rec_o2") : t("rec_gen")); });
+  const recs = Array.from(recSet);
+  const perBtns = ["live", "24h", "7d", "30d"].map(x => '<button type="button" data-a="per" data-v="' + x + '" aria-pressed="' + (S.per === x) + '">' + t("p_" + x) + '</button>').join("");
+  return '<div class="wrap">' + topbar(p.name, true) + demoPill() +
+    '<div class="row sb wrapf"><span class="row small b" data-s="' + (p.online ? "ok" : "off") + '"><span class="dot"></span>' + (p.online ? t("live") + " · " + timeS(p.ts) : t("dev_off") + " · " + t("last_read") + " " + timeS(p.ts)) + '</span>' + pill(s) + '</div>' + ban +
+    '<div class="pgrid">' + cards + '</div>' +
+    '<div class="card"><div class="row sb"><h2 style="font-size:16px">' + t("p_" + k) + ' · ' + t("trend") + '</h2><span class="small muted">' + d.u + '</span></div>' +
+    '<div class="seg" role="group" aria-label="' + t("period") + '">' + perBtns + '</div>' + bigChart(p, k, full) +
+    '<div class="vals" style="grid-template-columns:repeat(3,minmax(0,1fr))" data-s="ok"><div><small>' + t("lo") + '</small><b style="color:var(--fg)">' + fmt(mn, d.d) + '</b></div><div><small>' + t("avg") + '</small><b style="color:var(--fg)">' + fmt(av, d.d) + '</b></div><div><small>' + t("hi") + '</small><b style="color:var(--fg)">' + fmt(mx, d.d) + '</b></div></div>' +
+    '<span class="small muted">' + t("sim_note_chart") + '</span></div>' +
+    '<div class="card" style="background:var(--soft)"><h2 style="font-size:16px">' + t("rec") + '</h2><p>' + (recs.length ? esc(recs.join(" ")) : t("all_ok")) + '</p><span class="small muted">' + t("rec_note") + '</span></div>' +
+    '<div class="row"><button class="btn full" type="button" data-a="csv">' + t("copy_csv") + '</button><button class="btn ghost full" type="button" data-a="logfor" data-id="' + p.id + '">' + t("logs") + '</button></div>' +
+    (S.csv ? '<div class="field"><label for="csvbox">CSV</label><textarea id="csvbox" readonly>' + esc(S.csv) + '</textarea></div>' : "") + '</div>';
+}
+function alertCard(a) {
+  const p = pondById(a.pid), canAck = !a.resolved && !a.ackAt && a.level !== "info";
+  return '<div class="card" data-s="' + a.level + '"><div class="row sb"><span class="b">' + esc(alertTitle(a)) + '</span><span class="pill" data-s="' + a.level + '">' + t("lv_" + a.level) + '</span></div>' +
+    '<span class="muted small" style="font-size:13px">' + esc(alertDetail(a)) + '</span>' +
+    '<div class="row sb"><span class="small muted b">' + timeM(a.ts) + (a.resolved ? " · " + t("resolved") : a.ackAt ? " · " + t("acked") : "") + '</span><div class="row">' +
+    (p ? '<button class="btn sm ghost" type="button" data-a="pond" data-id="' + p.id + '">' + t("view") + '</button>' : '') +
+    (canAck ? '<button class="btn sm" type="button" data-a="ack" data-id="' + a.id + '">' + t("ack") + '</button>' : '') + '</div></div></div>';
+}
+function vAlerts() {
+  const act = S.alerts.filter(a => !a.resolved && a.level !== "info"), his = S.alerts.filter(a => a.resolved || a.level === "info");
+  const list = S.aTab === "active" ? act : his;
+  return '<div class="wrap">' + topbar(t("alerts")) +
+    '<div class="seg"><button type="button" data-a="atab" data-v="active" aria-pressed="' + (S.aTab === "active") + '">' + t("active") + ' (' + act.length + ')</button><button type="button" data-a="atab" data-v="hist" aria-pressed="' + (S.aTab === "hist") + '">' + t("history") + '</button></div>' +
+    (list.length ? list.map(alertCard).join("") : '<p class="muted">' + (S.aTab === "active" ? t("no_active") : t("no_hist")) + '</p>') +
+    '<div class="card"><h2 style="font-size:16px">' + t("how") + '</h2>' +
+    '<div class="field"><label for="s-alarm">' + t("alarm_after") + '</label><select id="s-alarm" data-c="alarm">' + [0, 10, 15, 30, 60].map(n => '<option value="' + n + '"' + (S.set.alarm === n ? " selected" : "") + '>' + (n ? n + ' s' : t("alarm_off")) + '</option>').join("") + '</select></div>' +
+    '<div class="field"><label for="s-need">' + t("need") + '</label><select id="s-need" data-c="need">' + [1, 3, 5].map(n => '<option value="' + n + '"' + (S.set.need === n ? " selected" : "") + '>' + n + '</option>').join("") + '</select><span class="small muted">' + t("need_note") + '</span></div>' +
+    '<label class="row sb b" style="min-height:44px">' + t("sound") + '<input id="s-sound" type="checkbox" data-c="sound"' + (S.set.sound ? " checked" : "") + '></label>' +
+    '<label class="row sb b" style="min-height:44px">' + t("hourly") + '<input id="s-hour" type="checkbox" data-c="hourly"' + (S.set.hourly ? " checked" : "") + '></label>' +
+    '<button class="btn ghost full" type="button" data-a="hourly">' + t("sim_hour") + '</button>' +
+    '<span class="small muted">' + t("push_note") + '</span></div></div>';
+}
+function pondOpts(sel) { return S.ponds.map(p => '<option value="' + p.id + '"' + (p.id === sel ? " selected" : "") + '>' + esc(p.name) + '</option>').join(""); }
+const CAT = {c_feed:"kg", c_seed:"larvas", c_mort:"pzas", c_harv:"kg"};
+function vLogs() {
+  const list = S.logs.slice().sort((a, b) => b.ts - a.ts).slice(0, 12);
+  return '<div class="wrap">' + topbar(t("logs")) +
+    '<div class="chips">' + Object.keys(CAT).map(c => '<button type="button" data-a="cat" data-v="' + c + '" aria-pressed="' + (S.cat === c) + '">' + t(c) + '</button>').join("") + '</div>' +
+    '<form id="logform" class="card" novalidate><div class="field"><label for="l-pond">' + t("pond") + '</label><select id="l-pond">' + pondOpts(S.pid || S.ponds[0].id) + '</select></div>' +
+    '<div class="field"><label for="l-qty">' + t("qty") + ' (' + CAT[S.cat] + ')</label><input id="l-qty" type="text" inputmode="decimal" placeholder="0">' + (S.flash === "e_qty" ? '<span class="err">' + t("e_qty") + '</span>' : '') + '</div>' +
+    '<div class="field"><label for="l-det">' + t("det") + '</label><input id="l-det" type="text"></div><button class="btn full" type="submit">' + t("save") + '</button></form>' +
+    '<div class="list">' + (list.length ? list.map(l => { const p = pondById(l.pid); return '<div class="item"><div><div class="b">' + t(l.cat) + '</div><div class="small muted">' + timeM(l.ts) + ' · ' + esc(p ? p.name : "") + (l.det ? " · " + esc(l.det) : "") + '</div></div><span class="num xb">' + l.qty + ' ' + CAT[l.cat] + '</span></div>'; }).join("") : '<p class="muted">' + t("no_logs") + '</p>') + '</div></div>';
+}
+function vDevices() {
+  return '<div class="wrap">' + topbar(t("devices"), true) + demoPill() + '<p class="muted small">' + t("dev_note") + '</p>' +
+    S.ponds.map(p => {
+      const on = p.online, st = on ? "ok" : "off";
+      const sens = PK.map(k => '<span class="pill" data-s="' + st + '">' + t("p_" + k) + ': ' + (on ? "OK" : t("no_data")) + '</span>').join("");
+      const nconn = S.alerts.filter(a => a.pid === p.id && a.k === "conn" && !a.resolved).length;
+      return '<div class="card" data-s="' + st + '"><div class="row sb"><span class="b">' + esc(p.name) + '</span><span class="pill" data-s="' + st + '">' + t(on ? "connected" : "st_off") + '</span></div>' +
+        '<div class="kv"><span class="muted">' + t("dev_id") + '</span><span class="b num">' + p.dev.id + '</span></div>' +
+        '<div class="kv"><span class="muted">' + t("last_tx") + '</span><span class="b">' + timeS(p.ts) + '</span></div>' +
+        '<div class="kv"><span class="muted">' + t("battery") + '</span><span class="b num">' + p.dev.batt + ' %</span></div>' +
+        '<div class="sens">' + sens + '</div>' + (nconn ? '<span class="err">' + t("a_conn") + '</span>' : '') + '</div>';
+    }).join("") + '</div>';
+}
+function vMore() {
+  const u = S.user;
+  const status = S.plan.status === "active" ? t("plan_on", {p:t(S.plan.period)}) : S.plan.status === "trial" ? t("trial", {n:S.plan.days}) : t("expired");
+  return '<div class="wrap">' + topbar(t("more")) +
+    '<div class="card"><span class="b">' + esc(u.name) + '</span><span class="muted small">' + esc(u.email) + '</span></div>' +
+    '<button class="card" type="button" data-a="go" data-v="devices"><span class="b">' + t("devices") + '</span><span class="muted small">' + S.ponds.filter(p => p.online).length + ' / ' + S.ponds.length + ' ' + t("dev_conn_n") + '</span></button>' +
+    '<button class="card" type="button" data-a="go" data-v="ranges"><span class="b">' + t("ranges") + '</span><span class="muted small">' + t("ranges_i") + '</span></button>' +
+    '<button class="card" type="button" data-a="go" data-v="plans"><span class="b">' + t("plan") + '</span><span class="muted small">' + status + '</span></button>' +
+    '<button class="btn ghost full" type="button" data-a="signout">' + t("out") + '</button></div>';
+}
+function vRanges() {
+  const p = pondById(S.rangesPond) || S.ponds[0];
+  const inp = (k, f, v) => '<div class="field"><label for="r-' + k + '-' + f + '">' + t("r_" + f) + '</label><input id="r-' + k + '-' + f + '" type="text" inputmode="decimal" value="' + (v == null ? "" : v) + '"></div>';
+  return '<div class="wrap">' + topbar(t("ranges"), true) + '<p class="muted">' + t("ranges_i") + '</p>' +
+    '<div class="field"><label for="r-pond">' + t("pond") + '</label><select id="r-pond" data-c="rpond">' + pondOpts(p.id) + '</select></div>' +
+    '<form id="rform" class="card" novalidate>' +
+    PK.map(k => { const r = p.ranges[k], d = PD[k];
+      return '<div class="rblock"><div class="b">' + t("p_" + k) + (d.u ? " (" + d.u + ")" : "") + '</div>' +
+        '<div class="small muted">' + t("r_sug") + ': ' + rangeTxt({min:d.min, max:d.max}) + (d.cmin == null && d.cmax == null ? " · " + t("r_undef") : "") + '</div>' +
+        '<div class="rgrid">' + inp(k, "min", r.min) + inp(k, "max", r.max) + inp(k, "cmin", r.cmin) + inp(k, "cmax", r.cmax) + '</div></div>'; }).join("") +
+    (S.rangesErr ? '<span class="err">' + t(S.rangesErr) + '</span>' : '') + (S.flash === "saved" ? '<span class="b" style="color:var(--ok)">' + t("saved") + '</span>' : '') +
+    '<button class="btn full" type="submit">' + t("save_r") + '</button><div class="row"><button class="btn ghost sm full" type="button" data-a="rdef">' + t("use_sug") + '</button><button class="btn ghost sm full" type="button" data-a="rall">' + t("copy_all") + '</button></div></form></div>';
+}
+function vPlans() {
+  const per = ["m", "s", "a"];
+  return '<div class="wrap">' + topbar(t("plan"), true) +
+    (S.plan.status === "active" ? '<div class="banner" data-s="ok"><b>' + t("plan_on", {p:t(S.plan.period)}) + '</b></div>' : S.plan.status === "expired" ? '<div class="banner" data-s="crit"><b>' + t("expired") + '</b></div>' : '<div class="banner" data-s="warn"><b>' + t("trial", {n:S.plan.days}) + '</b></div>') +
+    '<fieldset style="border:0;padding:0;margin:0" class="list"><legend style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">' + t("plan") + '</legend>' +
+    per.map(x => '<label class="opt"><input type="radio" name="per" value="' + x + '" data-c="period"' + (S.pay.period === x ? " checked" : "") + '><span style="flex:1"><span class="b" style="font-size:16px">' + t(x) + '</span></span><span class="b">' + t("price") + '</span></label>').join("") + '</fieldset>' +
+    '<div class="card"><h2 style="font-size:15px">' + t("inc_t") + '</h2>' + ["i1", "i2", "i3", "i4", "i5"].map(i => '<div class="row" style="align-items:flex-start"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>' + t(i) + '</span></div>').join("") + '</div>' +
+    '<button class="btn full" type="button" data-a="go" data-v="pay">' + t("go_pay") + '</button></div>';
+}
+function qr(seed) {
+  let s = seed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }, n = 21; let o = "";
+  const fin = (x, y) => { const b = [[0, 0], [14, 0], [0, 14]]; for (const [bx, by] of b) { const a = x - bx, c = y - by; if (a >= 0 && a < 7 && c >= 0 && c < 7) return (a === 0 || a === 6 || c === 0 || c === 6 || (a >= 2 && a <= 4 && c >= 2 && c <= 4)) ? 1 : 0; } return -1; };
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const f = fin(x, y), on = f >= 0 ? f === 1 : r() > .5; if (on) o += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>'; }
+  return '<svg class="qr" width="150" height="150" viewBox="-1 -1 23 23" role="img" aria-label="' + t("qr_ex") + '"><g fill="#0B1F5C">' + o + '</g></svg>';
+}
+function vPay() {
+  const m = S.pay.method;
+  if (!S.pay.ref) S.pay.ref = "BM-" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
+  const ms = ["m_card", "m_store", "m_spei", "m_wallet"];
+  let extra = "";
+  if (m === "m_store") extra = '<div class="card"><div class="row sb"><span class="b">' + t("receipt") + '</span><span class="pill" data-s="warn">' + t("pending") + '</span></div>' + qr(parseInt(S.pay.ref.slice(3), 10)) + '<span class="small muted" style="text-align:center">' + t("qr_ex") + '</span><div class="row sb"><span class="muted">' + t("ref") + '</span><span class="b num">' + S.pay.ref + '</span></div></div>';
+  else if (m === "m_card") extra = '<p class="muted small">' + t("card_note") + '</p>';
+  return '<div class="wrap">' + topbar(t("pay"), true) +
+    '<div class="card" style="background:#0B1F5C;color:#fff"><span class="small" style="opacity:.85">' + t(S.pay.period) + ' · B-METRIC</span><span class="xb" style="font-size:22px">' + t("price") + '</span></div>' +
+    '<fieldset style="border:0;padding:0;margin:0" class="list"><legend style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">' + t("pay") + '</legend>' +
+    ms.map(x => '<label class="opt"><input type="radio" name="meth" value="' + x + '" data-c="method"' + (m === x ? " checked" : "") + '><span class="b">' + t(x) + '</span></label>').join("") + '</fieldset>' + extra +
+    '<button class="btn full" type="button" data-a="simpay">' + t("sim_pay") + '</button></div>';
+}
+
+const LOCKED = ["home", "pond", "alerts", "logs", "ranges", "devices"];
+function render() {
+  const app = $("#app"), y = window.scrollY;
+  if (!S.user) { app.innerHTML = vAuth(); $("#nav").hidden = true; return; }
+  let h;
+  if (S.plan.status === "expired" && LOCKED.includes(S.view)) h = lockedView();
+  else h = ({home:vHome, pond:vPond, alerts:vAlerts, logs:vLogs, more:vMore, ranges:vRanges, devices:vDevices, plans:vPlans, pay:vPay}[S.view] || vHome)();
+  app.innerHTML = h; renderNav(); window.scrollTo(0, y);
+}
+function renderNav() {
+  const nav = $("#nav"); nav.hidden = !S.user; if (!S.user) return;
+  const cur = {home:"home", pond:"home", alerts:"alerts", logs:"logs"}[S.view] || "more", n = activeCount();
+  const tabs = [["home", I.home, "home"], ["alerts", I.bell, "alerts"], ["logs", I.doc, "logs"], ["more", I.menu, "more"]];
+  nav.innerHTML = "<div>" + tabs.map(([v, ic, l]) => '<button type="button" data-a="go" data-v="' + v + '"' + (cur === v ? ' aria-current="page"' : "") + '>' + ic + t(l) + (v === "alerts" && n ? '<span class="badge">' + n + '</span>' : "") + '</button>').join("") + "</div>";
+}
+function renderSheet() {
+  const box = $("#sheet");
+  if (!S.simOpen) { box.innerHTML = ""; return; }
+  const p = pondById(S.simPond) || S.ponds[0];
+  const sc = [["normal", "sc_normal"], ["o2", "sc_o2"], ["ph", "sc_ph"], ["temp", "sc_temp"], ["sal", "sc_sal"], [p.online ? "off" : "on", p.online ? "sc_off" : "sc_on"]];
+  box.innerHTML = '<div class="sheetbg" data-a="simclose"><div class="sheet" role="dialog" aria-label="' + t("sim_t") + '">' +
+    '<div class="row sb"><h2 style="font-size:18px">' + t("sim_t") + '</h2><button class="chip-btn" type="button" data-a="simclose">' + t("close") + '</button></div><p class="muted small">' + t("sim_n") + '</p>' +
+    '<div class="field"><label for="sim-pond">' + t("pond") + '</label><select id="sim-pond" data-c="simpond">' + pondOpts(p.id) + '</select></div>' +
+    '<div class="field"><span class="lbl">' + t("sev") + '</span><div class="seg"><button type="button" data-a="sev" data-v="warn" aria-pressed="' + (S.sev === "warn") + '">' + t("sev_warn") + '</button><button type="button" data-a="sev" data-v="crit" aria-pressed="' + (S.sev === "crit") + '">' + t("sev_crit") + '</button></div><span class="small muted">' + t("sev_note") + '</span></div>' +
+    '<div class="sgrid">' + sc.map(([s, l]) => '<button class="btn sm' + (s === "normal" ? "" : " ghost") + '" type="button" data-a="scen" data-v="' + s + '">' + t(l) + '</button>').join("") + '</div>' +
+    '<div class="card"><span class="b small">' + t("now_read") + '</span><div class="vals" id="simread"></div></div>' +
+    '<div class="field"><span class="lbl">' + t("speed") + '</span><div class="seg">' + [1, 3, 6].map(n => '<button type="button" data-a="speed" data-v="' + n + '" aria-pressed="' + (S.speed === n) + '">x' + n + '</button>').join("") + '</div></div>' +
+    '<div class="row"><button class="btn sm ghost full" type="button" data-a="endtrial">' + t("end_trial") + '</button><button class="btn sm ghost full" type="button" data-a="restart">' + t("restart_trial") + '</button></div></div></div>';
+  updateSimRead();
+}
+function updateSimRead() {
+  const el = $("#simread"), p = pondById(S.simPond); if (!el || !p) return;
+  el.innerHTML = PK.map(k => '<div data-s="' + (p.online ? pst(p, k) : "off") + '"><small>' + t("p_" + k) + '</small><b>' + fmt(p.vals[k], PD[k].d === 2 ? 1 : PD[k].d) + '</b></div>').join("");
+}
+/* Evita redibujar mientras el usuario toca la pantalla o escribe, para no perder toques ni texto */
+let pressing = false, pressT = null;
+document.addEventListener("pointerdown", () => { pressing = true; clearTimeout(pressT); }, true);
+const releasePress = () => { clearTimeout(pressT); pressT = setTimeout(() => { pressing = false; }, 150); };
+document.addEventListener("pointerup", releasePress, true);
+document.addEventListener("pointercancel", releasePress, true);
+function typing() {
+  const a = document.activeElement;
+  return !!(a && $("#app").contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "checkbox" && a.type !== "radio");
+}
+function afterTick() {
+  if (!S.user) return;
+  updateSimRead();
+  if (!pressing) renderNav();
+  if (["home", "pond", "alerts", "devices"].includes(S.view) && !pressing && !typing()) render();
+  alarmCheck();
+}
+
+/* ===== Acciones ===== */
+const go = (v, extra) => { S.view = v; S.csv = ""; S.flash = ""; S.rangesErr = ""; if (extra) Object.assign(S, extra); render(); window.scrollTo(0, 0); };
+function login(user) {
+  S.user = user; S.authErr = {}; S.lastSum = Date.now();
+  S.ponds.forEach(p => PK.forEach(k => p.cnt[k] = 0));
+  go("home");
+}
+const pad2 = n => String(n).padStart(2, "0");
+const stamp = ts => { const d = new Date(ts); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-a]"); if (!el) return;
+  const a = el.dataset.a, v = el.dataset.v, id = el.dataset.id;
+  if (a === "simclose" && e.target.closest(".sheet") && !e.target.closest("button")) return;
+  switch (a) {
+    case "amode": S.authMode = v; S.authErr = {}; render(); break;
+    case "social": login({name:"Demo", email:"demo@b-metric.app"}); break;
+    case "go": go(v); break;
+    case "back": go(S.view === "pond" ? "home" : (S.view === "pay" ? "plans" : "more")); break;
+    case "pond": S.pid = +id; S.simPond = +id; go("pond"); break;
+    case "sel": S.sel = el.dataset.k; render(); break;
+    case "per": S.per = v; render(); break;
+    case "hmode": S.homeMode = v; render(); break;
+    case "addopen": S.addOpen = true; render(); { const i = $("#np"); if (i) i.select(); } break;
+    case "addclose": S.addOpen = false; render(); break;
+    case "signout": S.user = null; S.view = "auth"; hideAlarm(); render(); break;
+    case "atab": S.aTab = v; render(); break;
+    case "ack": { const x = S.alerts.find(z => z.id === +id); if (x) x.ackAt = Date.now(); alarmCheck(); render(); break; }
+    case "hourly": addSummary(); render(); break;
+    case "cat": S.cat = v; S.flash = ""; render(); break;
+    case "logfor": S.pid = +id; go("logs"); break;
+    case "csv": {
+      const p = pondById(S.pid); if (!p) break;
+      const win = PER[S.per === "live" ? "24h" : S.per], from = Date.now() - win, rows = ["fecha_hora,ph,oxigeno_mgL,temperatura_C,salinidad_ppt"];
+      const ref = p.ser.ph;
+      for (let i = 0; i < ref.length; i++) if (ref[i][0] >= from) rows.push(stamp(ref[i][0]) + "," + PK.map(k => fmt(p.ser[k][i][1], PD[k].d)).join(","));
+      rows.push(stamp(Date.now()) + "," + PK.map(k => fmt(p.vals[k], PD[k].d)).join(","));
+      const text = rows.join("\n");
+      (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text).then(() => toast(t("copied"), "ok")) : Promise.reject()).catch(() => { S.csv = text; render(); toast(t("copy_fail"), "warn"); });
+      break;
+    }
+    case "rdef": { const p = pondById(S.rangesPond); PK.forEach(k => p.ranges[k] = {min:PD[k].min, max:PD[k].max, cmin:PD[k].cmin, cmax:PD[k].cmax}); S.rangesErr = ""; render(); break; }
+    case "rall": { const src = pondById(S.rangesPond); S.ponds.forEach(p => PK.forEach(k => p.ranges[k] = {...src.ranges[k]})); S.flash = "saved"; render(); break; }
+    case "simpay": S.plan = {status:"active", days:0, period:S.pay.period}; toast(t("paid"), "ok"); go("more"); break;
+    case "sim": S.simOpen = true; if (S.view === "pond" && S.pid) S.simPond = S.pid; renderSheet(); break;
+    case "simclose": S.simOpen = false; renderSheet(); break;
+    case "sev": S.sev = v; renderSheet(); break;
+    case "scen": { const p = pondById(S.simPond); if (p) { scen(p, v); evalAlerts(); } renderSheet(); render(); break; }
+    case "speed": S.speed = +v; restartTimer(); renderSheet(); break;
+    case "endtrial": S.plan = {status:"expired", days:0, period:S.plan.period}; S.simOpen = false; renderSheet(); hideAlarm(); render(); break;
+    case "restart": S.plan = {status:"trial", days:14, period:S.plan.period}; S.simOpen = false; renderSheet(); render(); break;
+    case "alarm-stop": { const x = S.alerts.find(z => z.id === S.alarmId); if (x) x.ackAt = Date.now(); hideAlarm(); render(); break; }
+    case "alarm-snooze": { const x = S.alerts.find(z => z.id === S.alarmId); if (x) x.snoozeUntil = Date.now() + 30000; hideAlarm(); break; }
+  }
+});
+document.addEventListener("change", e => {
+  const el = e.target.closest("[data-c]"); if (!el) return; const c = el.dataset.c;
+  if (c === "alarm") S.set.alarm = +el.value;
+  else if (c === "need") S.set.need = +el.value;
+  else if (c === "sound") S.set.sound = el.checked;
+  else if (c === "hourly") S.set.hourly = el.checked;
+  else if (c === "rpond") { S.rangesPond = +el.value; S.rangesErr = ""; S.flash = ""; render(); }
+  else if (c === "simpond") { S.simPond = +el.value; renderSheet(); }
+  else if (c === "period") S.pay.period = el.value;
+  else if (c === "method") { S.pay.method = el.value; render(); }
+});
+document.addEventListener("submit", e => {
+  e.preventDefault(); const f = e.target.id;
+  if (f === "authform") {
+    const reg = S.authMode === "register", em = $("#a-email").value.trim(), pw = $("#a-pw").value, nm = reg ? $("#a-name").value.trim() : "";
+    S.authErr = {email:!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em), pw:pw.length < 8, name:reg && !nm};
+    if (S.authErr.email || S.authErr.pw || S.authErr.name) { render(); return; }
+    login({name:nm || em.split("@")[0], email:em});
+  } else if (f === "addform") {
+    const nm = $("#np").value.trim() || ("Estanque " + (S.ponds.length + 1)), p = makePond(nm); S.ponds.push(p); S.addOpen = false; render();
+  } else if (f === "logform") {
+    const q = parseFloat(($("#l-qty").value || "").replace(",", "."));
+    if (!(q > 0)) { S.flash = "e_qty"; render(); return; }
+    S.logs.unshift({id:++lid, pid:+$("#l-pond").value, cat:S.cat, qty:q, det:$("#l-det").value.trim(), ts:Date.now()}); S.flash = ""; render(); toast(t("saved"), "ok");
+  } else if (f === "rform") {
+    const p = pondById(S.rangesPond), nr = {}; let bad = false;
+    PK.forEach(k => {
+      const g = fld => { const s = $("#r-" + k + "-" + fld).value.trim().replace(",", "."); return s === "" ? null : Number(s); };
+      const o = {min:g("min"), max:g("max"), cmin:g("cmin"), cmax:g("cmax")};
+      if (Object.values(o).some(x => x != null && isNaN(x))) bad = true;
+      else {
+        if (o.min != null && o.max != null && o.min > o.max) bad = true;
+        if (o.cmin != null && o.min != null && o.cmin > o.min) bad = true;
+        if (o.cmax != null && o.max != null && o.cmax < o.max) bad = true;
+        if (o.cmin != null && o.cmax != null && o.cmin > o.cmax) bad = true;
+      }
+      nr[k] = o;
+    });
+    if (bad) { S.rangesErr = "e_range"; S.flash = ""; render(); return; }
+    p.ranges = nr; S.rangesErr = ""; S.flash = "saved"; evalAlerts(); render(); renderNav();
+  }
+});
+
+/* ===== Arranque ===== */
+let timer = null;
+function restartTimer() { clearInterval(timer); timer = setInterval(tick, 2000 / S.speed); }
+seed(); render(); restartTimer(); setInterval(alarmCheck, 1000);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Documento interno del proyecto: se queda solo en la computadora
+CONTEXTO_BMETRIC.md
+
+# Archivos de sistema y secretos (por si acaso)
+Thumbs.db
+Desktop.ini
+.DS_Store
+.env
+.env.*
