@@ -15,7 +15,8 @@ La idea es una boya con sensores que flota en el estanque, mide el agua y envía
 
 - Inicio de sesión simulado (correo y Google).
 - Panel principal con el estado de los estanques (vista de lista y cuadrícula).
-- Monitoreo de **pH, oxígeno disuelto, temperatura y salinidad**, con gráficas en vivo, 24 horas, 7 días y 30 días.
+- Monitoreo de **pH, oxígeno disuelto, temperatura y turbidez**, con gráficas en vivo, 24 horas, 7 días y 30 días. La turbidez se muestra solo con datos simulados: el sensor todavía no está confirmado para la primera versión.
+- Si un parámetro no tiene rango definido, la app muestra «Rango por definir» y no genera alertas de ese parámetro.
 - Niveles de estado: **Normal, Aviso, Crítico y Sin conexión**.
 - Alertas con historial, alarma de pantalla completa y notificaciones simuladas en pantalla.
 - Filtro de falsas alarmas: la alerta salta tras 3 lecturas seguidas fuera de rango (configurable).
@@ -33,7 +34,7 @@ La idea es una boya con sensores que flota en el estanque, mide el agua y envía
 | Oxígeno disuelto | más de 5 mg/L | menos de 4 mg/L |
 | Temperatura | 26 a 32 °C | menos de 24 °C o más de 33 °C |
 | pH | 7.5 a 8.5 | menos de 7.0 o más de 9.0 (propuesta de demostración) |
-| Salinidad | 15 a 25 ppt | sin definir |
+| Turbidez | 15 a 30 NTU | más de 60 NTU (preliminar, por confirmar) |
 
 Estos valores son preliminares y **deben validarse con un especialista**.
 
@@ -42,7 +43,8 @@ Estos valores son preliminares y **deben validarse con un especialista**.
 - Servidor, API y base de datos.
 - Notificaciones push reales.
 - Control de aireadores, bombas y alimentadores (funciones futuras).
-- Turbidez, amoniaco, nitritos y alcalinidad (no confirmados para la primera versión).
+- Sensor de turbidez real (en la app solo hay datos simulados).
+- Amoniaco, nitritos y alcalinidad (no confirmados para la primera versión).
 
 ## Cómo abrirlo
 

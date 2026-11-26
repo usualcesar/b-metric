@@ -148,7 +148,7 @@ home:"Inicio",alerts:"Alertas",logs:"Registros",more:"Más",back:"Volver",close:
 farm:"Granja de ejemplo",my_ponds:"Mis estanques",list:"Lista",map:"Cuadrícula",add_pond:"Agregar estanque",pond_name:"Nombre del estanque",add:"Agregar",cancel:"Cancelar",
 demo_pill:"Datos simulados · demostración",ponds_n:"estanques",dev_conn_n:"dispositivos conectados",alerts_pend:"alertas pendientes",
 st_ok:"Normal",st_warn:"Aviso",st_crit:"Crítico",st_off:"Sin conexión",
-p_ph:"pH",p_o2:"Oxígeno disuelto",p_temp:"Temperatura",p_sal:"Salinidad",
+p_ph:"pH",p_o2:"Oxígeno disuelto",p_temp:"Temperatura",p_turb:"Turbidez",r_tbd:"Rango por definir",
 range:"Rango",live:"En vivo",updated:"Actualizado",dev_off:"Dispositivo desconectado",last_read:"última lectura",
 rec:"Recomendación",rec_note:"Recomendaciones generales de ejemplo, pendientes de validar con un especialista.",all_ok:"Todo en rango. Sin acciones pendientes.",
 rec_o2:"Revisa el estanque y que la aireación esté funcionando. Consulta a tu técnico.",
@@ -158,7 +158,7 @@ sim_note_chart:"Datos simulados. En «En vivo» cada punto es una lectura; en lo
 p_live:"En vivo",p_24h:"24 horas",p_7d:"7 días",p_30d:"30 días",period:"Periodo",
 copy_csv:"Copiar reporte (CSV)",copied:"Reporte copiado",copy_fail:"No se pudo copiar. Selecciona el texto de abajo.",
 active:"Activas",history:"Historial",ack:"Enterado",acked:"Atendida",resolved:"Resuelta",view:"Ver",no_active:"Sin alertas activas.",no_hist:"Aún no hay historial.",
-a_low:"bajo",a_high:"alto",a_conn:"Dispositivo desconectado",a_conn_d:"Dejó de enviar datos. Revisa la energía o la señal del dispositivo.",a_sum:"Resumen de la hora",
+a_low:"bajo",a_high:"alto",a_low_f:"baja",a_high_f:"alta",a_conn:"Dispositivo desconectado",a_conn_d:"Dejó de enviar datos. Revisa la energía o la señal del dispositivo.",a_sum:"Resumen de la hora",
 lv_warn:"Aviso",lv_crit:"Crítica",lv_conn:"Conexión",lv_info:"Resumen",notif:"Notificación",
 how:"Cómo te avisamos",alarm_after:"Alarma si nadie atiende (segundos, demo)",alarm_off:"Apagada",sound:"Sonido de alarma",hourly:"Resumen cada hora",sim_hour:"Simular resumen de la hora",
 need:"Lecturas seguidas fuera de rango para alertar",need_note:"Evita falsas alarmas por una lectura aislada. Con 1 alerta de inmediato.",push_note:"Las notificaciones push se simulan en pantalla en esta demostración.",
@@ -174,8 +174,8 @@ i1:"Varios estanques en una sola cuenta",i2:"pH, oxígeno, temperatura y salinid
 go_pay:"Continuar al pago",pay:"Pago",m_tbd:"Métodos de pago por definir",m_tbd_note:"Esta pantalla es una demostración. Aquí no se captura ningún dato de pago.",
 sim_pay:"Simular pago confirmado",paid:"Pago confirmado. Suscripción activa.",
 out:"Cerrar sesión",
-sim_t:"Simulador de sensores",sim_n:"Provoca fallas para probar alertas y alarma. Los datos son simulados.",sev:"Gravedad",sev_warn:"Aviso",sev_crit:"Crítico",sev_note:"La salinidad solo llega a Aviso: su límite crítico está por definir.",
-sc_normal:"Normalizar",sc_o2:"Oxígeno bajo",sc_ph:"pH bajo",sc_temp:"Temperatura alta",sc_sal:"Salinidad alta",sc_off:"Desconectar",sc_on:"Reconectar",speed:"Velocidad",
+sim_t:"Simulador de sensores",sim_n:"Provoca fallas para probar alertas y alarma. Los datos son simulados.",sev:"Gravedad",sev_warn:"Aviso",sev_crit:"Crítico",
+sc_normal:"Normalizar",sc_o2:"Oxígeno bajo",sc_ph:"pH bajo",sc_temp:"Temperatura alta",sc_turb:"Turbidez alta",sc_off:"Desconectar",sc_on:"Reconectar",speed:"Velocidad",
 end_trial:"Terminar prueba gratis",restart_trial:"Reiniciar prueba",now_read:"Lecturas actuales",
 sc_hint:"Prueba esto: elige un estanque, pulsa «Oxígeno bajo» y espera la alerta, la notificación y la alarma."
 };
@@ -184,16 +184,21 @@ const t = (k, o) => { let s = T[k] || k; if (o) for (const x in o) s = s.replace
 /* ===== Parámetros =====
    Rangos preliminares: Normal dentro de [min, max]; Aviso fuera de ese rango; Crítico más allá de cmin/cmax.
    Oxígeno, temperatura y pH salen del documento del proyecto; los límites de pH 7.0 y 9.0 son una propuesta de demostración.
-   Salinidad: el límite crítico (cambio brusco) está por definir, por eso es null. */
-const PK = ["ph", "o2", "temp", "sal"];
+   Turbidez: rango preliminar pedido por el equipo (normal 15–30 NTU, crítico arriba de 60 NTU), pendiente de validar.
+   El sensor de turbidez no está confirmado para el MVP; aquí solo hay datos simulados.
+   La salinidad se quitó de la demostración a pedido del equipo.
+   f:true = nombre femenino ("Turbidez alta"). Si un parámetro no tiene rango, se muestra "Rango por definir" y no alerta. */
+const PK = ["ph", "o2", "temp", "turb"];
 const PD = {
   ph:{u:"",d:2,base:8.1,noise:.025,min:7.5,max:8.5,cmin:7.0,cmax:9.0,amp:.15,ph0:10},
   o2:{u:"mg/L",d:1,base:5.8,noise:.1,min:5,max:null,cmin:4,cmax:null,amp:.7,ph0:11},
   temp:{u:"°C",d:1,base:29.2,noise:.12,min:26,max:32,cmin:24,cmax:33,amp:1.1,ph0:9},
-  sal:{u:"ppt",d:1,base:20,noise:.12,min:15,max:25,cmin:null,cmax:null,amp:.2,ph0:0}
+  turb:{u:"NTU",d:0,base:22,noise:.6,min:15,max:30,cmin:null,cmax:60,amp:2.5,ph0:13,f:true}
 };
 /* Valores objetivo del simulador por gravedad */
-const SC = {o2:{warn:4.5,crit:2.6}, ph:{warn:7.2,crit:6.9}, temp:{warn:32.6,crit:33.8}, sal:{warn:28,crit:28}};
+const SC = {o2:{warn:4.5,crit:2.6}, ph:{warn:7.2,crit:6.9}, temp:{warn:32.6,crit:33.8}, turb:{warn:42,crit:72}};
+const hasRange = r => r.min != null || r.max != null || r.cmin != null || r.cmax != null;
+const dirTxt = (k, dir) => t((dir === "low" ? "a_low" : "a_high") + (PD[k] && PD[k].f ? "_f" : ""));
 const PER = {"24h":24 * 3600e3, "7d":7 * 24 * 3600e3, "30d":30 * 24 * 3600e3};
 
 /* ===== Estado ===== */
@@ -229,9 +234,9 @@ function makePond(name, base) {
 function seed() {
   /* Valores de ejemplo del documento del proyecto (solo para la interfaz) */
   S.ponds = [
-    makePond("Estanque 1", {o2:5.8, temp:29.2, ph:8.1, sal:20}),
-    makePond("Estanque 2", {o2:3.6, temp:30.1, ph:8.3, sal:22}),
-    makePond("Estanque 3", {o2:6.2, temp:27.8, ph:7.9, sal:18})
+    makePond("Estanque 1", {o2:5.8, temp:29.2, ph:8.1, turb:22}),
+    makePond("Estanque 2", {o2:3.6, temp:30.1, ph:8.3, turb:26}),
+    makePond("Estanque 3", {o2:6.2, temp:27.8, ph:7.9, turb:19})
   ];
   S.simPond = S.ponds[0].id; S.rangesPond = S.ponds[0].id;
   S.logs = [
@@ -255,7 +260,7 @@ function pondSt(p) {
   PK.forEach(k => { const s = pst(p, k); if (s === "crit") w = "crit"; else if (s === "warn" && w !== "crit") w = "warn"; });
   return w;
 }
-const rangeTxt = r => (r.min != null && r.max != null) ? r.min + " – " + r.max : r.min != null ? "≥ " + r.min : r.max != null ? "≤ " + r.max : "—";
+const rangeTxt = r => (r.min != null && r.max != null) ? r.min + " – " + r.max : r.min != null ? "≥ " + r.min : r.max != null ? "≤ " + r.max : t("r_tbd");
 
 /* ===== Simulación (se sustituirá por datos de una API cuando exista) ===== */
 function tick() {
@@ -314,7 +319,7 @@ function alertTitle(a) {
   const p = pondById(a.pid), n = p ? p.name : "";
   if (a.k === "conn") return n + " · " + t("a_conn");
   if (a.k === "sum") return t("a_sum");
-  return n + " · " + t("p_" + a.k) + " " + t(a.dir === "low" ? "a_low" : "a_high");
+  return n + " · " + t("p_" + a.k) + " " + dirTxt(a.k, a.dir);
 }
 function alertDetail(a) {
   if (a.k === "conn") return t("a_conn_d");
@@ -358,7 +363,7 @@ function showAlarm(a) {
   const p = pondById(a.pid);
   $("#alarm").innerHTML = '<div class="alarm" role="alertdialog" aria-label="' + esc(t("alarm_t")) + '"><div class="b" style="letter-spacing:.12em">' + t("alarm_t") + '</div>' +
     '<div class="big">' + fmt(a.v, PD[a.k].d) + '</div><div class="b">' + PD[a.k].u + '</div>' +
-    '<h2 style="font-size:24px">' + esc(p ? p.name : "") + '</h2><div style="font-size:18px;font-weight:700">' + esc(t("p_" + a.k) + " " + t(a.dir === "low" ? "a_low" : "a_high")) + '</div>' +
+    '<h2 style="font-size:24px">' + esc(p ? p.name : "") + '</h2><div style="font-size:18px;font-weight:700">' + esc(t("p_" + a.k) + " " + dirTxt(a.k, a.dir)) + '</div>' +
     '<div style="height:12px"></div><button class="btn" data-a="alarm-stop" type="button">' + t("stop") + '</button><button class="btn ghost" data-a="alarm-snooze" type="button">' + t("snooze") + '</button></div>';
   beep(); clearInterval(alarmTimer); alarmTimer = setInterval(beep, 1000);
 }
@@ -476,7 +481,7 @@ function vPond() {
   const cards = PK.map(q => {
     const st = p.online ? pst(p, q) : "off";
     return '<button class="pc" type="button" data-a="sel" data-k="' + q + '" data-s="' + st + '" aria-pressed="' + (q === k) + '"><div class="row sb"><span class="small b muted">' + t("p_" + q) + '</span>' + pill(st) + '</div>' +
-      '<div class="big' + (p.online ? '' : ' stale') + '">' + fmt(p.vals[q], PD[q].d) + ' <small>' + PD[q].u + '</small></div><span class="small muted">' + (p.online ? t("range") + ': ' + rangeTxt(p.ranges[q]) : t("last_read") + ': ' + timeS(p.ts)) + '</span>' + spark(p.hist[q]) + '</button>';
+      '<div class="big' + (p.online ? '' : ' stale') + '">' + fmt(p.vals[q], PD[q].d) + ' <small>' + PD[q].u + '</small></div><span class="small muted">' + (p.online ? (hasRange(p.ranges[q]) ? t("range") + ': ' + rangeTxt(p.ranges[q]) : t("r_tbd")) : t("last_read") + ': ' + timeS(p.ts)) + '</span>' + spark(p.hist[q]) + '</button>';
   }).join("");
   const full = seriesFor(p, k), vs = full.map(x => x[1]);
   const mn = Math.min(...vs), mx = Math.max(...vs), av = vs.reduce((x, y) => x + y, 0) / vs.length;
@@ -600,11 +605,11 @@ function renderSheet() {
   const box = $("#sheet");
   if (!S.simOpen) { box.innerHTML = ""; return; }
   const p = pondById(S.simPond) || S.ponds[0];
-  const sc = [["normal", "sc_normal"], ["o2", "sc_o2"], ["ph", "sc_ph"], ["temp", "sc_temp"], ["sal", "sc_sal"], [p.online ? "off" : "on", p.online ? "sc_off" : "sc_on"]];
+  const sc = [["normal", "sc_normal"], ["o2", "sc_o2"], ["ph", "sc_ph"], ["temp", "sc_temp"], ["turb", "sc_turb"], [p.online ? "off" : "on", p.online ? "sc_off" : "sc_on"]];
   box.innerHTML = '<div class="sheetbg" data-a="simclose"><div class="sheet" role="dialog" aria-label="' + t("sim_t") + '">' +
     '<div class="row sb"><h2 style="font-size:18px">' + t("sim_t") + '</h2><button class="chip-btn" type="button" data-a="simclose">' + t("close") + '</button></div><p class="muted small">' + t("sim_n") + '</p>' +
     '<div class="field"><label for="sim-pond">' + t("pond") + '</label><select id="sim-pond" data-c="simpond">' + pondOpts(p.id) + '</select></div>' +
-    '<div class="field"><span class="lbl">' + t("sev") + '</span><div class="seg"><button type="button" data-a="sev" data-v="warn" aria-pressed="' + (S.sev === "warn") + '">' + t("sev_warn") + '</button><button type="button" data-a="sev" data-v="crit" aria-pressed="' + (S.sev === "crit") + '">' + t("sev_crit") + '</button></div><span class="small muted">' + t("sev_note") + '</span></div>' +
+    '<div class="field"><span class="lbl">' + t("sev") + '</span><div class="seg"><button type="button" data-a="sev" data-v="warn" aria-pressed="' + (S.sev === "warn") + '">' + t("sev_warn") + '</button><button type="button" data-a="sev" data-v="crit" aria-pressed="' + (S.sev === "crit") + '">' + t("sev_crit") + '</button></div></div>' +
     '<div class="sgrid">' + sc.map(([s, l]) => '<button class="btn sm' + (s === "normal" ? "" : " ghost") + '" type="button" data-a="scen" data-v="' + s + '">' + t(l) + '</button>').join("") + '</div>' +
     '<div class="card"><span class="b small">' + t("now_read") + '</span><div class="vals" id="simread"></div></div>' +
     '<div class="field"><span class="lbl">' + t("speed") + '</span><div class="seg">' + [1, 3, 6].map(n => '<button type="button" data-a="speed" data-v="' + n + '" aria-pressed="' + (S.speed === n) + '">x' + n + '</button>').join("") + '</div></div>' +
@@ -665,7 +670,7 @@ document.addEventListener("click", e => {
     case "logfor": S.pid = +id; go("logs"); break;
     case "csv": {
       const p = pondById(S.pid); if (!p) break;
-      const win = PER[S.per === "live" ? "24h" : S.per], from = Date.now() - win, rows = ["fecha_hora,ph,oxigeno_mgL,temperatura_C,salinidad_ppt"];
+      const win = PER[S.per === "live" ? "24h" : S.per], from = Date.now() - win, rows = ["fecha_hora,ph,oxigeno_mgL,temperatura_C,turbidez_NTU"];
       const ref = p.ser.ph;
       for (let i = 0; i < ref.length; i++) if (ref[i][0] >= from) rows.push(stamp(ref[i][0]) + "," + PK.map(k => fmt(p.ser[k][i][1], PD[k].d)).join(","));
       rows.push(stamp(Date.now()) + "," + PK.map(k => fmt(p.vals[k], PD[k].d)).join(","));
